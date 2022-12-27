@@ -11,8 +11,8 @@ import pathlib
 
 # shutil.copy2(original, duplicate)
 
-original_tree = ""
-duplicate_tree = ""
+original_tree = "D:\\coding projects\\Projects\\BackupManager\\temp\\[Cleo] Citrus"
+duplicate_tree = "D:\\coding projects\\Projects\\BackupManager\\temp\\test"
 
 original_path = pathlib.PurePath(original_tree)
 duplicate_path = pathlib.PurePath(duplicate_tree)
@@ -21,13 +21,12 @@ def ignore(visiting, contents):
     exclude = []
 
     for item in contents:
-        file = pathlib.Path(item)
+        file = pathlib.Path(visiting+'/'+item)
         if file.is_file():
             extension = visiting.replace(original_tree, "")
-            dupe_file = pathlib.Path(duplicate_path/extension/file)
-            if dupe_file.exists() and dupe_file.stat().st_mtime
-    print(visiting)
-    print(contents)
+            dupe_file = pathlib.Path(duplicate_tree + extension + "\\" + item)
+            if dupe_file.exists() and dupe_file.stat().st_mtime == file.stat().st_mtime:
+                exclude.append(item)
     return exclude
 
 start = perf_counter()
