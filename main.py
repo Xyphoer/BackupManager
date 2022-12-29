@@ -2,6 +2,14 @@ from time import perf_counter
 
 import shutil
 import pathlib
+import argparse
+
+parser = argparse.ArgumentParser(prog="Backup Manager",
+                                 description="Manages backup of everything contained in a specified directory")
+parser.add_argument("path",
+                    help="")
+
+args = parser.parse_args()
 
 original_tree = ""
 duplicate_tree = ""
