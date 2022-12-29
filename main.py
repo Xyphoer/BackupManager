@@ -12,16 +12,23 @@ duplicate_tree = "D:\\coding projects\\Projects\\BackupManager\\temp\\test"
 original_path = pathlib.PurePath(original_tree)
 duplicate_path = pathlib.PurePath(duplicate_tree)
 
+#####
+# Name: ignore
+# Inputs: visiting (string) [current directory], contents (list) [contained directories & files]
+# Output: exclude (list) [files to ignore]
+# Description: ignore function for shutil.copytree - determines whether files in a directory need to be backed up.
+#              Called for the original directory and all subdirectories in original_tree when used in shutil.copytree.
+#####
 def ignore(visiting, contents):
-    exclude = []
+    exclude = []    # to contain unchanged previously backed up files
 
     for item in contents:
-        file = pathlib.Path(visiting+'/'+item)
+        file = pathlib.Path(visiting+'/'+item)  # use current folder's path and current item in folder to get desired file's path
         if file.is_file():
-            extension = visiting.replace(original_tree, "")
-            dupe_file = pathlib.Path(duplicate_tree + extension + "\\" + item)
+            extension = visiting.replace(original_tree, "") # get the extra dirs walked from original_tree
+            dupe_file = pathlib.Path(duplicate_tree + extension + "\\" + item)  # find location to check/copy duplicate file
             if dupe_file.exists() and dupe_file.stat().st_mtime == file.stat().st_mtime:
-                exclude.append(item)
+                exclude.append(item)    # add file to be ignored if it already exists in backup and modified time of orig = dupe
     print("Visiting: " + visiting)
     print("Number of files: " + str(len(exclude)))
     return exclude
@@ -34,4 +41,4 @@ shutil.copytree(original_path, duplicate_path, ignore=ignore, dirs_exist_ok=True
 
 end = perf_counter()
 
-print(end-start)
+print(end-start)    # output time taken for backup
