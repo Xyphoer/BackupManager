@@ -24,6 +24,7 @@ duplicate_path = pathlib.Path(duplicate_tree)
 original_exists = original_path.exists()
 duplicate_exists = duplicate_path.exists()
 
+# keep track of how many files are going to be copied
 copied_amount = 0
 
 #####
@@ -49,9 +50,9 @@ def ignore(visiting, contents):
                 exclude.append(item)    # add file to be ignored if it already exists in backup and modified time of orig = dupe
                 files -= 1  # decriment files if not copying
     print("Visiting: " + visiting)
-    print("Number of files: " + str(len(exclude)))
+    print("Number of files already backed up: " + str(len(exclude)))
     copied_amount += files
-    print(f"Copied: {files} Total: {copied_amount}")
+    print(f"Copying: {files} Total: {copied_amount}")
     return exclude
 
 # perform backup or output error messages depending on whether provided path's exist
@@ -64,7 +65,7 @@ if original_exists and duplicate_exists:
 
     end = perf_counter()
 
-    print(end-start)    # output time taken for backup
+    print(f"Backup finished in {round(end-start, ndigits=2)} seconds")    # output time taken for backup
 elif not original_exists and duplicate_exists:
     print(f"Input path {original_tree} doesn't exist.")
 elif not duplicate_exists and original_exists:
