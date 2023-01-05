@@ -1,7 +1,7 @@
 from time import perf_counter
+from pathlib import Path
+from shutil import copytree
 
-import shutil
-import pathlib
 import argparse
 
 # set up parser
@@ -16,8 +16,8 @@ parser.add_argument("-cb", "--check-backup", action="store_true",
 
 args = parser.parse_args()
 
-original_path = pathlib.Path(args.input)
-duplicate_path = pathlib.Path(args.output)
+original_path = Path(args.input)
+duplicate_path = Path(args.output)
 
 # check if provided path's exist
 original_exists = original_path.exists()
@@ -39,13 +39,13 @@ def ignore(visiting, contents):
     exclude = []    # to contain unchanged previously backed up files
     files = 0   # to contain how many files have been backed up
 
-    extension = visiting.replace(original_path.as_posix(), "") # get the extra dirs walked from original_path
+    extension = visiting.replace(str(original_path), "") # get the extra dirs walked from original_path
 
     for item in contents:
-        file = pathlib.Path(visiting+'/'+item)  # use current folder's path and current item in folder to get desired file's path
+        file = Path(visiting+'/'+item)  # use current folder's path and current item in folder to get desired file's path
         if file.is_file():
             files += 1
-            dupe_file = pathlib.Path(duplicate_path.as_posix() + extension + "\\" + item)  # find location to check/copy duplicate file
+            dupe_file = Path(str(duplicate_path) + extension + "\\" + item)  # find location to check/copy duplicate file
             if dupe_file.exists() and dupe_file.stat().st_mtime == file.stat().st_mtime:
                 exclude.append(item)    # add file to be ignored if it already exists in backup and modified time of orig = dupe
                 files -= 1  # decriment files if not copying
@@ -61,25 +61,25 @@ def ignore(visiting, contents):
 # Output: None
 # Description: Check the backup directory and all contained directories for files not present in the original directory.
 #####
-def check_backup(tree = duplicate_path.as_posix()):
-    dupe_dir = pathlib.Path(tree)
-    extension = tree.replace(duplicate_path.as_posix(), "") # get the extra dirs walked from duplicate_path
+def check_backup(tree = str(duplicate_path)):
+    dupe_dir = Path(tree)
+    extension = tree.replace(str(duplicate_path), "") # get the extra dirs walked from duplicate_path
     for child in dupe_dir.iterdir():    # iterate over all contents of the directory
         # if the child is a file check for it's existince in the original directory
         if child.is_file():
-            original_file = pathlib.Path(original_path.as_posix() + extension + "\\" + child.name)
+            original_file = Path(str(original_path) + extension + "\\" + child.name)
             if not original_file.exists():
-                print(f"{child} in backup has no corresponding file at {original_file.as_posix()}")
+                print(f"{child} in backup has no corresponding file at {str(original_file)}")
         # if the child is a directory, recursively call self function with that directory as the working tree
         elif child.is_dir():
-            check_backup(tree = child.as_posix())
+            check_backup(tree = str(child))
     return
 
 # perform backup or output error messages depending on whether provided path's exist
 if original_exists and duplicate_exists:
     start = perf_counter()
 
-    shutil.copytree(original_path, duplicate_path, ignore=ignore, dirs_exist_ok=True)
+    copytree(original_path, duplicate_path, ignore=ignore, dirs_exist_ok=True)
 
     end = perf_counter()
 
@@ -88,8 +88,8 @@ if original_exists and duplicate_exists:
     if args.check_backup:
         check_backup()
 elif not original_exists and duplicate_exists:
-    print(f"Input path {original_path.as_posix()} doesn't exist.")
+    print(f"Input path {str(original_path)} doesn't exist.")
 elif not duplicate_exists and original_exists:
-    print(f"Output path {duplicate_path.as_posix()} doesn't exist.")
+    print(f"Output path {str(duplicate_path)} doesn't exist.")
 else:
-    print(f"Input path {original_path.as_posix()} and output path {duplicate_path.as_posix()} don't exist.")
+    print(f"Input path {str(original_path)} and output path {str(duplicate_path)} don't exist.")
