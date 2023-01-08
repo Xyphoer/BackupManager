@@ -13,9 +13,13 @@ parser.add_argument("-i", "--input", required=True,
 parser.add_argument("-o", "--output", required=True,
                     help="The backup directory path. If ommitted will not backup anything.")
 parser.add_argument("-eb", "--exclude-backup", nargs="*",
-                    help="""Excludes specified directories/files from backup. Accepts 0+ folder/file paths or a text file of paths
+                    help="""Excludes specified directories/files from backup. Accepts folder/file paths or a text file of paths
                     seperated by new lines. Precede text file with '>'.
-                    If used without arguments, doesn't backup any files.""")
+                    If used without arguments, doesn't backup any files.
+                    Takes precedence over --only-backup""")
+parser.add_argument("-ob", "--only-backup", nargs="*",
+                    help="""Only backup specified directories/files. Accepts folder/file paths or a text file of paths
+                    seperated by new lines. Precede text file with '>'.""")
 parser.add_argument("-cb", "--check-backup", action="store_true",
                     help="Checks the backup directory for any files not present in the original directory.")
 parser.add_argument("-log", "--loglevel", type=int, choices=range(4), default=1,
@@ -40,23 +44,43 @@ logging.debug(str(original_path) + " -> " + str(duplicate_path))
 # keep track of how many files are going to be copied
 copied_amount = 0
 
-# store files and directories to skip in backup process
-if len(args.exclude_backup) == 1 and args.exclude_backup[0][0] == ">":  # check if providing a text file
-    input_file = Path(args.exclude_backup[0][1:])   # get text file path (exclude ">")
-    if not input_file.exists():
-        logging.warning(str(input_file) + " doesn't exist.")
-    elif input_file.is_dir():
-        logging.warning(str(input_file) + " is not a file.")
-    elif not input_file.suffix == ".txt":
-        logging.warning(str(input_file) + " is not a text (txt) file.")
+#####
+# Name: check_file
+# Inputs: in_file (Path) [input text file]
+# Output: out (list) [files to skip or only include]
+# Description: Checks to see if a provided file exists, is a text file, and can be read.
+#####
+def check_file(in_file):
+    out = []
+    if not in_file.exists():
+            logging.warning(str(in_file) + " doesn't exist.")
+    elif in_file.is_dir():
+        logging.warning(str(in_file) + " is not a file.")
+    elif not in_file.suffix == ".txt":
+        logging.warning(str(in_file) + " is not a text (txt) file.")
     else:
         try:
-            with open(input_file) as skip_file:
-                skip = skip_file.read().split("\n")     # if file exists and is a txt file, read it as "skip"
+            with open(in_file) as file:
+                out = file.read().split("\n")     # if file exists and is a txt file, read it as out ("skip"/"only_backup")
         except PermissionError:
-            logging.warning("Permission Denied: Unable to open exclude backup file " + str(input_file))
-else:   # if not providing a text file, read the command line for files
-    skip = args.exclude_backup if args.exclude_backup != None else []
+            logging.warning("Permission Denied: Unable to open " + str(in_file))
+    return out
+
+# store files and directories to skip in backup process
+skip = args.exclude_backup if args.exclude_backup != None else []  # read the command line for files
+
+if len(skip) == 1 and skip[0][0] == ">":  # check if providing a text file
+    input_file = Path(skip[0][1:])   # get text file path (exclude ">")
+    skip = check_file(input_file)
+    
+
+# store files and directories to only backup
+only_backup = args.only_backup if args.only_backup != None else []  # read the command line for files
+
+if len(only_backup) == 1 and only_backup[0][0] == ">":  # check if providing a text file
+    input_file = Path(args.only_backup[0][1:])   # get text file path (exclude ">")
+    only_backup = check_file(input_file)
+    
 
 #####
 # Name: ignore
@@ -68,6 +92,7 @@ else:   # if not providing a text file, read the command line for files
 def ignore(visiting, contents):
     global copied_amount
     global skip
+    global only_backup
 
     exclude = []    # to contain unchanged previously backed up files
     folder_skip = []    # to contain any files to skip in this folder
@@ -76,20 +101,28 @@ def ignore(visiting, contents):
 
     logging.info("Visiting: " + visiting)
 
-    if visiting in skip:
+    if only_backup:     # is only_backup is not empty
+        if visiting not in only_backup:     # if visiting is in only_backup move forward as normal
+            # if visiting is not in only_backup set folder_skip to initially be everything in visiting that's not in only_backup
+            folder_skip = [location for location in contents if visiting+"\\"+location not in only_backup]
+
+    # if visiting is listed to skip or only_backup isn't empty and neither visiting nor anything in contents are in only_backup
+    if visiting in skip or len(contents) == len(folder_skip):
         logging.info("Skipping folder.") # test is skipping a parent dir skips child dirs
         exclude = contents
     else:
         extension = visiting.replace(str(original_path), "") # get the extra dirs walked from original_path
         logging.info("Backup location: " + str(duplicate_path) + extension)
 
-        for item in contents:
-            file = Path(visiting+'/'+item)  # use current folder's path and current item in folder to get desired file's path
+        for item in contents:  # contents - [s.split("\\")[-1] for s in skip] - [e.split("\\")[-1] for e in exclude]
+            file = Path(visiting+"\\"+item)  # use current folder's path and current item in folder to get desired file's path
             if file.is_file():
 
-                if str(file) in skip:
-                    logging.debug("Skipping: " + item)
+                if str(file) in skip:   # skip item because item listed in exclude_backup
+                    logging.debug("Skipping (eb): " + item)
                     folder_skip.append(item)
+                elif item in folder_skip:   # skip item because item not listed in only_backup
+                    logging.debug("Skipping (ob): " + item)
 
                 else:
                     files += 1
