@@ -13,7 +13,7 @@ parser.add_argument("-i", "--input", required=True,
 parser.add_argument("-o", "--output", required=True,
                     help="The backup directory path. If ommitted will not backup anything.")
 parser.add_argument("-eb", "--exclude-backup", nargs="*",
-                    help="Excludes specified directories/files from backup (todo). If used without arguments, doesn't backup any files.")
+                    help="Excludes specified directories/files from backup. If used without arguments, doesn't backup any files.")
 parser.add_argument("-cb", "--check-backup", action="store_true",
                     help="Checks the backup directory for any files not present in the original directory.")
 parser.add_argument("-log", "--loglevel", type=int, choices=range(4), default=1,
@@ -64,6 +64,7 @@ def ignore(visiting, contents):
         exclude = contents
     else:
         extension = visiting.replace(str(original_path), "") # get the extra dirs walked from original_path
+        logging.info("Backup location: " + str(duplicate_path) + extension)
 
         for item in contents:
             file = Path(visiting+'/'+item)  # use current folder's path and current item in folder to get desired file's path
@@ -79,7 +80,7 @@ def ignore(visiting, contents):
 
                     dupe_file = Path(str(duplicate_path) + extension + "\\" + item)  # find location to check/copy duplicate file
                     if dupe_file.exists() and dupe_file.stat().st_mtime == file.stat().st_mtime:
-                        logging.debug(f"Already Present: {str(file)} -> {str(dupe_file)}")
+                        logging.debug("Already Backed Up: " + item)
                         exclude.append(item)    # add file to be ignored if it already exists in backup and modified time of orig = dupe
                         copy -= 1  # decriment copy if not copying
         
