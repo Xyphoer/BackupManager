@@ -13,7 +13,9 @@ parser.add_argument("-i", "--input", required=True,
 parser.add_argument("-o", "--output", required=True,
                     help="The backup directory path. If ommitted will not backup anything.")
 parser.add_argument("-eb", "--exclude-backup", nargs="*",
-                    help="Excludes specified directories/files from backup. If used without arguments, doesn't backup any files.")
+                    help="""Excludes specified directories/files from backup. Accepts 0+ folder/file paths or a text file of paths
+                    seperated by new lines. Precede text file with '>'.
+                    If used without arguments, doesn't backup any files.""")
 parser.add_argument("-cb", "--check-backup", action="store_true",
                     help="Checks the backup directory for any files not present in the original directory.")
 parser.add_argument("-log", "--loglevel", type=int, choices=range(4), default=1,
@@ -39,7 +41,22 @@ logging.debug(str(original_path) + " -> " + str(duplicate_path))
 copied_amount = 0
 
 # store files and directories to skip in backup process
-skip = args.exclude_backup if args.exclude_backup != None else []
+if len(args.exclude_backup) == 1 and args.exclude_backup[0][0] == ">":  # check if providing a text file
+    input_file = Path(args.exclude_backup[0][1:])   # get text file path (exclude ">")
+    if not input_file.exists():
+        logging.warning(str(input_file) + " doesn't exist.")
+    elif input_file.is_dir():
+        logging.warning(str(input_file) + " is not a file.")
+    elif not input_file.suffix == ".txt":
+        logging.warning(str(input_file) + " is not a text (txt) file.")
+    else:
+        try:
+            with open(input_file) as skip_file:
+                skip = skip_file.read().split("\n")     # if file exists and is a txt file, read it as "skip"
+        except PermissionError:
+            logging.warning("Permission Denied: Unable to open exclude backup file " + str(input_file))
+else:   # if not providing a text file, read the command line for files
+    skip = args.exclude_backup if args.exclude_backup != None else []
 
 #####
 # Name: ignore
