@@ -9,9 +9,9 @@ import logging
 parser = argparse.ArgumentParser(prog="Backup Manager",
                                  description="Manages backup of everything contained in a specified directory")
 parser.add_argument("-i", "--input", required=True,
-                    help="The original directory path. If ommitted will not backup anything.")
+                    help="The original directory path.")
 parser.add_argument("-o", "--output", required=True,
-                    help="The backup directory path. If ommitted will not backup anything.")
+                    help="The backup directory path. If this doesn't exist it will be created.")
 parser.add_argument("-eb", "--exclude-backup", nargs="*",
                     help="""Excludes specified directories/files from backup. Accepts folder/file paths or a text file of paths
                     seperated by new lines. Precede text file with '>'.
@@ -165,7 +165,7 @@ def check_backup(tree = str(duplicate_path)):
     return
 
 # perform backup or output error messages depending on whether provided path's exist
-if (original_exists and duplicate_exists):
+if original_exists:
 
     # if exclude_backup is specified without arguments, don't perform backup operation
     if args.exclude_backup == []:
@@ -181,9 +181,5 @@ if (original_exists and duplicate_exists):
 
     if args.check_backup:
         check_backup()
-elif not original_exists and duplicate_exists:
-    logging.warning(f"Input path {str(original_path)} doesn't exist.")
-elif not duplicate_exists and original_exists:
-    logging.warning(f"Output path {str(duplicate_path)} doesn't exist.")
 else:
-    logging.warning(f"Input path {str(original_path)} and output path {str(duplicate_path)} don't exist.")
+    logging.warning(f"Input path {str(original_path)} don't exist.")
