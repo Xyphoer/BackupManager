@@ -22,7 +22,7 @@ parser.add_argument("-ob", "--only-backup", nargs="*",
                     seperated by new lines. Precede text file with '>'.""")
 parser.add_argument("-cb", "--check-backup", action="store_true",
                     help="Checks the backup directory for any files not present in the original directory.")
-parser.add_argument("-log", "--loglevel", type=int, choices=range(4), default=1,
+parser.add_argument("-log", "--loglevel", type=int, choices=range(4), default=2,
                     help="""Details how much info should be displayed. The higher, the more info.
                     0: No info  1: Warnings only  2: Basic info & warnings  3: Debug info & previous""")
 
@@ -182,4 +182,4 @@ if original_exists:
     if args.check_backup:
         check_backup()
 else:
-    logging.warning(f"Input path {str(original_path)} don't exist.")
+    logging.warning(f"Input path {str(original_path)} doesn't exist.")
