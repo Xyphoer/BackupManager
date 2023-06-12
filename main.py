@@ -8,8 +8,8 @@ import logging
 # set up parser
 parser = argparse.ArgumentParser(prog="Backup Manager",
                                  description="Manages backup of everything contained in a specified directory")
-parser.add_argument("-i", "--input", required=True,
-                    help="The original directory path.")
+parser.add_argument("-i", "--input", required=True, action='append',
+                    help="The original directory path(s).")
 parser.add_argument("-o", "--output", required=True,
                     help="The backup directory path. If this doesn't exist it will be created.")
 parser.add_argument("-eb", "--exclude-backup", nargs="*",
@@ -32,14 +32,15 @@ log_dict = {0: logging.NOTSET, 1: logging.WARNING, 2: logging.INFO, 3: logging.D
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=log_dict[args.loglevel])
 
-original_path = Path(args.input)
+original_paths = [Path(in_arg) for in_arg in args.input]
 duplicate_path = Path(args.output)
 
 # check if provided path's exist
-original_exists = original_path.exists()
+original_exists = [original_path.exists() for original_path in original_paths]
 duplicate_exists = duplicate_path.exists()
 
-logging.debug(str(original_path) + " -> " + str(duplicate_path))
+for original_path in original_paths:
+    logging.debug(str(original_path) + " -> " + str(duplicate_path))
 
 # keep track of how many files are going to be copied
 copied_amount = 0
@@ -99,7 +100,7 @@ def ignore(visiting, contents):
     copy = 0   # to contain how many files have been backed up
     files = 0   # to contain how many files are contained
 
-    logging.info("Visiting: " + visiting)
+    logging.info(">>>>> Visiting: " + visiting)
 
     if only_backup:     # is only_backup is not empty
         if visiting not in only_backup:     # if visiting is in only_backup move forward as normal
@@ -156,30 +157,45 @@ def check_backup(tree = str(duplicate_path)):
     for child in dupe_dir.iterdir():    # iterate over all contents of the directory
         # if the child is a file check for it's existince in the original directory
         if child.is_file():
-            original_file = Path(str(original_path) + extension + "\\" + child.name)
-            if not original_file.exists():
-                logging.info(f"{child} in backup has no corresponding file at {str(original_file)}")
+            original_file_exists = False
+            for original_path in original_paths:
+                original_file = Path(str(original_path) + extension + "\\" + child.name)
+                if original_file.exists():
+                    original_file_exists = True
+                    break
+            if not original_file_exists:
+                logging.info(f"{child} in backup has no corresponding file.")
         # if the child is a directory, recursively call self function with that directory as the working tree
         elif child.is_dir():
             check_backup(tree = str(child))
     return
 
-# perform backup or output error messages depending on whether provided path's exist
-if original_exists:
+total_start = perf_counter()
 
-    # if exclude_backup is specified without arguments, don't perform backup operation
-    if args.exclude_backup == []:
-        logging.info("Skipping Backup.")
+for path_exists, original_path in zip(original_exists, original_paths):
+    # perform backup or output error messages depending on whether provided path's exist
+    if path_exists:
+
+        # if exclude_backup is specified without arguments, don't perform backup operation
+        if args.exclude_backup == []:
+            logging.info("<<<<< Skipping Backup.")
+        else:
+            start = perf_counter()
+
+            copytree(original_path, duplicate_path, ignore=ignore, dirs_exist_ok=True)
+
+            end = perf_counter()
+
+            logging.info(f"<<<<< Backup of {str(original_path)} finished in {round(end-start, ndigits=2)} seconds")    # output time taken for backup
     else:
-        start = perf_counter()
+        logging.warning(f"Input path {str(original_path)} doesn't exist.")
 
-        copytree(original_path, duplicate_path, ignore=ignore, dirs_exist_ok=True)
+total_end = perf_counter()
 
-        end = perf_counter()
+logging.info(f"Backup finished in {round(total_end-total_start, ndigits=2)} seconds")    # output time taken for backup
 
-        logging.info(f"Backup finished in {round(end-start, ndigits=2)} seconds")    # output time taken for backup
-
-    if args.check_backup:
+if args.check_backup:
+    if False in original_exists:
+        logging.info(f"Skipping 'check backup' because of non-existant input file(s).")
+    else:
         check_backup()
-else:
-    logging.warning(f"Input path {str(original_path)} doesn't exist.")
