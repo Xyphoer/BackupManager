@@ -81,7 +81,17 @@ only_backup = args.only_backup if args.only_backup != None else []  # read the c
 if len(only_backup) == 1 and only_backup[0][0] == ">":  # check if providing a text file
     input_file = Path(args.only_backup[0][1:])   # get text file path (exclude ">")
     only_backup = check_file(input_file)
-    
+
+#####
+# Name: sufficiently_close
+# Inputs: input_val: float, reference_val: float, lof: int (limit of freedom)
+# Output: bool
+# Description: determines if a value if "sufficiently close" enough to another to be considered the same
+#####
+def sufficiently_close(input_val: float, reference_val: float, lof: int) -> bool:
+    if ((input_val < reference_val + lof) or (input_val > reference_val - lof)):
+        return True
+    return False
 
 #####
 # Name: ignore
@@ -130,7 +140,8 @@ def ignore(visiting, contents):
                     copy += 1
 
                     dupe_file = Path(str(duplicate_path) + extension + "\\" + item)  # find location to check/copy duplicate file
-                    if dupe_file.exists() and dupe_file.stat().st_mtime == file.stat().st_mtime:
+                    if dupe_file.exists() and sufficiently_close(dupe_file.stat().st_mtime, file.stat().st_mtime, 5):  # modified time of copied files may very by a few seconds
+                        ## NOTE: Add second level of verification via file size (optional between which matters, and what levels of freedom are granted to each)
                         logging.debug("Already Backed Up: " + item)
                         exclude.append(item)    # add file to be ignored if it already exists in backup and modified time of orig = dupe
                         copy -= 1  # decriment copy if not copying
