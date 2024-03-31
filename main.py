@@ -126,7 +126,7 @@ def ignore(visiting, contents):
         logging.info("Backup location: " + str(duplicate_path) + extension)
 
         for item in contents:  # contents - [s.split("\\")[-1] for s in skip] - [e.split("\\")[-1] for e in exclude]
-            file = Path(visiting+"\\"+item)  # use current folder's path and current item in folder to get desired file's path
+            file = Path(visiting, item)  # use current folder's path and current item in folder to get desired file's path
             if file.is_file():
 
                 if str(file) in skip:   # skip item because item listed in exclude_backup
@@ -139,7 +139,7 @@ def ignore(visiting, contents):
                     files += 1
                     copy += 1
 
-                    dupe_file = Path(str(duplicate_path) + extension + "\\" + item)  # find location to check/copy duplicate file
+                    dupe_file = Path(str(duplicate_path) + extension, item)  # find location to check/copy duplicate file
                     if dupe_file.exists() and sufficiently_close(dupe_file.stat().st_mtime, file.stat().st_mtime, 5):  # modified time of copied files may very by a few seconds
                         ## NOTE: Add second level of verification via file size (optional between which matters, and what levels of freedom are granted to each)
                         logging.debug("Already Backed Up: " + item)
@@ -170,7 +170,7 @@ def check_backup(tree = str(duplicate_path)):
         if child.is_file():
             original_file_exists = False
             for original_path in original_paths:
-                original_file = Path(str(original_path) + extension + "\\" + child.name)
+                original_file = Path(str(original_path) + extension, child.name)
                 if original_file.exists():
                     original_file_exists = True
                     break
