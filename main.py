@@ -89,7 +89,7 @@ if len(only_backup) == 1 and only_backup[0][0] == ">":  # check if providing a t
 # Description: determines if a value if "sufficiently close" enough to another to be considered the same
 #####
 def sufficiently_close(input_val: float, reference_val: float, lof: int) -> bool:
-    if ((input_val < reference_val + lof) or (input_val > reference_val - lof)):
+    if ((input_val < reference_val + lof) and (input_val > reference_val - lof)):
         return True
     return False
 
