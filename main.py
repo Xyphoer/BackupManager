@@ -75,12 +75,12 @@ if len(skip) == 1 and skip[0][0] == ">":  # check if providing a text file
     skip = check_file(input_file)
     
 
-# store files and directories to only backup
-only_backup = args.only_backup if args.only_backup != None else []  # read the command line for files
-
-if len(only_backup) == 1 and only_backup[0][0] == ">":  # check if providing a text file
+if args.only_backup and len(args.only_backup) == 1 and args.only_backup[0][0] == ">":  # check if providing a text file
     input_file = Path(args.only_backup[0][1:])   # get text file path (exclude ">")
     only_backup = check_file(input_file)
+else:
+    # store files and directories to only backup
+    only_backup = [Path(item) for item in args.only_backup] if args.only_backup != None else []  # read the command line for files
 
 #####
 # Name: sufficiently_close
@@ -115,7 +115,7 @@ def ignore(visiting, contents):
     if only_backup:     # is only_backup is not empty
         if visiting not in only_backup:     # if visiting is in only_backup move forward as normal
             # if visiting is not in only_backup set folder_skip to initially be everything in visiting that's not in only_backup
-            folder_skip = [location for location in contents if visiting+"\\"+location not in only_backup]
+            folder_skip = [location for location in contents if Path(visiting, location) not in only_backup]
 
     # if visiting is listed to skip or only_backup isn't empty and neither visiting nor anything in contents are in only_backup
     if visiting in skip or len(contents) == len(folder_skip):
